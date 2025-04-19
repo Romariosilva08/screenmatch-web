@@ -2,6 +2,7 @@ package br.com.alura.screenmatch.principal;
 
 import br.com.alura.screenmatch.model.*;
 import br.com.alura.screenmatch.repository.SerieRepository;
+import br.com.alura.screenmatch.service.AvaliacaoComentarioService;
 import br.com.alura.screenmatch.service.ConsumoApi;
 import br.com.alura.screenmatch.service.ConverteDados;
 
@@ -22,31 +23,34 @@ public class Principal {
     private List<DadosSerie> dadosSeries = new ArrayList<>();
 
     private SerieRepository repositorio;
+    private AvaliacaoComentarioService avaliacaoComentarioService;
     private List<Serie> series = new ArrayList<>();
     private Optional<Serie> serieBusca;
 
-    public Principal(SerieRepository repositorio) {
+    public Principal(SerieRepository repositorio, AvaliacaoComentarioService avaliacaoComentarioService) {
         this.repositorio = repositorio;
+        this.avaliacaoComentarioService = avaliacaoComentarioService;
+
     }
 
     public void exibeMenu() {
         var opcao = -1;
         while(opcao != 0) {
             var menu = """
-                    1 - Buscar séries
-                    2 - Buscar episódios
-                    3 - Listar séries buscadas
-                    4 - Buscar série por título
-                    5 - Buscar séries por ator
-                    6 - Top 5 Séries
-                    7 - Buscar séries por categoria
-                    8 - Filtrar séries
-                    9 - Buscar episódios por trecho
-                    10 - Top 5 episódios por série
-                    11 - Buscar episódios a partir de uma data 
-                                    
-                    0 - Sair                                 
-                    """;
+                1 - Buscar séries
+                2 - Buscar episódios
+                3 - Listar séries buscadas
+                4 - Buscar série por título
+                5 - Buscar séries por ator
+                6 - Top 5 Séries
+                7 - Buscar séries por categoria
+                8 - Filtrar séries
+                9 - Buscar episódios por trecho
+                10 - Top 5 episódios por série
+                11 - Buscar episódios a partir de uma data 
+                12 - Avaliar série  // Nova opção
+                0 - Sair                                 
+                """;
 
             System.out.println(menu);
             opcao = leitura.nextInt();
@@ -86,6 +90,9 @@ public class Principal {
                 case 11:
                     buscarEpisodiosDepoisDeUmaData();
                     break;
+                case 12:
+                    avaliarSerie();
+                    break;
                 case 0:
                     System.out.println("Saindo...");
                     break;
@@ -94,6 +101,7 @@ public class Principal {
             }
         }
     }
+
 
     private void buscarSerieWeb() {
         DadosSerie dados = getDadosSerie();
@@ -235,4 +243,44 @@ public class Principal {
             episodiosAno.forEach(System.out::println);
         }
     }
+
+
+
+
+    private void avaliarSerie() {
+        System.out.println("Digite o nome da série para avaliar: ");
+        var nomeSerie = leitura.nextLine();
+
+        Optional<Serie> serieEncontrada = repositorio.findByTituloContainingIgnoreCase(nomeSerie);
+
+        if (serieEncontrada.isPresent()) {
+            Serie serie = serieEncontrada.get();
+            System.out.println("Série encontrada: " + serie.getTitulo());
+            System.out.println("Avaliação atual: " + serie.getAvaliacao());
+
+            System.out.println("Digite uma nova avaliação (de 1 a 5 estrelas): ");
+            double novaAvaliacao = leitura.nextDouble();
+            leitura.nextLine(); // limpa buffer
+
+            if (novaAvaliacao >= 1 && novaAvaliacao <= 5) {
+                // Atualiza a avaliação geral da série
+                serie.setAvaliacao(novaAvaliacao);
+                repositorio.save(serie);
+
+                // Pede um comentário opcional
+                System.out.println("Deseja deixar um comentário? (opcional): ");
+                String comentario = leitura.nextLine();
+
+                // Salva avaliação individual com estrelinhas e comentário
+                avaliacaoComentarioService.adicionarAvaliacaoComentario(serie.getId(), novaAvaliacao, comentario);
+
+                System.out.println("Avaliação registrada com sucesso!");
+            } else {
+                System.out.println("Avaliação inválida. Deve estar entre 1 e 5.");
+            }
+        } else {
+            System.out.println("Série não encontrada!");
+        }
+    }
 }
+

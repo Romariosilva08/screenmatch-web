@@ -28,7 +28,6 @@ public class AvaliacaoComentarioController {
         return ResponseEntity.ok(resposta);
     }
 
-
     @GetMapping("/{serieId}")
     public ResponseEntity<List<AvaliacaoComentarioDTO>> obterAvaliacoesPorSerie(@PathVariable Long serieId) {
         List<AvaliacaoComentarioDTO> dtos = service.obterAvaliacoesPorSerie(serieId);
